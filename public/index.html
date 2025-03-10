@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div>
+        <canvas id="game" width="800" height="600" style="border:1px solid #000000;">
+
+        </canvas>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        Hero_list = {};
+
+        socket.on('init', function(data){
+            Hero_list = data;
+            console.log("Info Received");
+            console.log(Hero_list);
+        });
+
+        socket.on('addNewPlayer', function(data){
+            Hero_list[data.id] = data;
+            console.log("new Player added");
+            console.log(Hero_list);
+        })
+
+    </script>
+</body>
+</html>
