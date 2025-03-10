@@ -47,5 +47,8 @@ io.sockets.on('connection', function(socket){
         delete Hero.list[socket.id];
         console.log("Deleted id " + socket.id);
         console.log(Hero.list);
+
+        //To do 
+        //Delete player and their existence on other client data.
     })
 });
