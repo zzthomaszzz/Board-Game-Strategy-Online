@@ -12,22 +12,42 @@
         </canvas>
     </div>
 
+/* When a player disconnect remove that player data from the server and other player*/
+what consist of player data on server side
+-SOcket_list
+-Player_list
+
+Other client side
+remove player data
+- Hero_list
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
+
+        //Connection System
         Hero_list = {};
 
+        //New connection will get all the data of the active clients and itself.
         socket.on('init', function(data){
             Hero_list = data;
             console.log("Info Received");
             console.log(Hero_list);
         });
 
-        socket.on('addNewPlayer', function(data){
+        //For existing clients to add data of the newly connected client.
+        socket.on('addPlayer', function(data){
             Hero_list[data.id] = data;
             console.log("new Player added");
+            console.log(Hero_list);
+        })
+
+        //For existing clients to remove data of the disconnected client.
+        socket.on('removePlayer', function(data){
+            delete Hero_list[data];
+            console.log("Player removed");
             console.log(Hero_list);
         })
 

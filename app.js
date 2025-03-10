@@ -39,7 +39,7 @@ io.sockets.on('connection', function(socket){
 
     //Adding new player data to other Sockets
     for (var i in SOCKET_LIST){
-        SOCKET_LIST[i].emit('addNewPlayer', Hero.list[socket.id]);
+        SOCKET_LIST[i].emit('addPlayer', Hero.list[socket.id]);
     }
     SOCKET_LIST[socket.id] = socket;
 
@@ -49,6 +49,10 @@ io.sockets.on('connection', function(socket){
         console.log(Hero.list);
 
         //To do 
-        //Delete player and their existence on other client data.
+        delete SOCKET_LIST[socket.id];
+        for ( var i in SOCKET_LIST){
+            SOCKET_LIST[i].emit('removePlayer', socket.id);
+        }
+
     })
 });
