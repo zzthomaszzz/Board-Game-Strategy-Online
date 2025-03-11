@@ -15,11 +15,11 @@ serv.listen(3000, () => {
 
 class Hero{
     constructor(id){
-        this.speed = 5;
-        this.x = 0;
-        this.y = 0;
-        this.height = 80;
-        this.width = 40;
+        this.speed = 2;
+        this.x = 5;
+        this.y = 3;
+        this.height = 50;
+        this.width = 50;
         this.id = id;
     }
 }
@@ -31,11 +31,12 @@ var io=require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
     socket.id=Math.random();
     Hero.list[socket.id] = new Hero(socket.id);
+    //To remove
     console.log("New connection added");
     console.log(Hero.list);
 
     //Init pack for new connection only
-    socket.emit("init", Hero.list);
+    socket.emit("init", Hero.list, socket.id);
 
     //Adding new player data to other Sockets
     for (var i in SOCKET_LIST){
@@ -45,14 +46,38 @@ io.sockets.on('connection', function(socket){
 
     socket.on('disconnect', function(){
         delete Hero.list[socket.id];
+        //To remove
         console.log("Deleted id " + socket.id);
         console.log(Hero.list);
 
-        //To do 
         delete SOCKET_LIST[socket.id];
         for ( var i in SOCKET_LIST){
             SOCKET_LIST[i].emit('removePlayer', socket.id);
         }
-
     })
+
+    //Selecting Heroes
+
+    socket.on('selectPlayer', function(data){
+        var possibleMoves = [];
+        var hero = Hero.list[data];
+
+        var y = -hero.speed;
+        for(y; y <= hero.speed; y++){
+            var x = -hero.speed;
+            for(x; x <= hero.speed; x++){
+                possibleMoves.push([x + hero.x , y + hero.y]);
+            }
+        }
+        socket.emit('showMoves', possibleMoves);
+    })
+
+    socket.on('moveTo', function(data, id){
+        Hero.list[id].x = data[0];
+        Hero.list[id].y = data[1];
+        for (var i in SOCKET_LIST){
+            SOCKET_LIST[i].emit('update', Hero.list[id]);
+        }
+    })
+
 });

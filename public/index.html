@@ -12,45 +12,123 @@
         </canvas>
     </div>
 
-/* When a player disconnect remove that player data from the server and other player*/
-what consist of player data on server side
--SOcket_list
--Player_list
-
-Other client side
-remove player data
-- Hero_list
-
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
 
+        //Client Side
+        var selfId = null;
+        var mouse = [0, 0];
+        var state = 1;
+
+        //Player Data
+        var possibleMoves = [];
+
+        function draw(){
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if(state == 2){
+                for(var i in possibleMoves){
+                    ctx.fillStyle = "blue";
+                    ctx.fillRect(possibleMoves[i][0] * 50, possibleMoves[i][1] * 50, 50, 50);
+                }
+            }
+            for(var key in Hero_list){
+                var data = Hero_list[key];
+                ctx.fillStyle = 'red';
+                ctx.fillRect(data.x * data.width, data.y * data.height, data.width, data.height);
+            }
+        }
+
+        // To check for mouse click on a large data set (i.e all the available squares that the player can move to)
+        // This function only check for a single rect, you would need to do a for loop to check for all the rects.
+        function isPointInRect(data){
+            if(mouse[0] > (data.x * 50) && mouse[0] < (data.x * 50)+ data.width && mouse[1] > (data.y * 50) && mouse[1] < (data.y * 50) + data.height){
+                return true;
+            }
+            return false;
+        }
+
         //Connection System
         Hero_list = {};
 
         //New connection will get all the data of the active clients and itself.
-        socket.on('init', function(data){
+        socket.on('init', function(data, id){
+            if(selfId == null){
+                selfId = id;
+                console.log("ID received");
+                console.log(selfId);
+            }
             Hero_list = data;
+            //To remove
             console.log("Info Received");
             console.log(Hero_list);
+            draw();
         });
 
         //For existing clients to add data of the newly connected client.
         socket.on('addPlayer', function(data){
             Hero_list[data.id] = data;
+            //To remove
             console.log("new Player added");
             console.log(Hero_list);
+
+            draw();
         })
 
         //For existing clients to remove data of the disconnected client.
         socket.on('removePlayer', function(data){
             delete Hero_list[data];
+            //To remove
             console.log("Player removed");
             console.log(Hero_list);
+
+            draw();
         })
 
+
+        socket.on('update', function(data){
+            Hero_list[data.id] = data;
+            draw();
+        })
+
+
+        socket.on('showMoves', function(data){
+            possibleMoves = data;
+            console.log(possibleMoves);
+            draw();
+        })
+        //Mouse interactions
+
+        document.onmousemove = function(event){
+            mouse[0] = event.clientX - canvas.getBoundingClientRect().left;
+            mouse[1] = event.clientY - canvas.getBoundingClientRect().top;
+        }
+
+        document.onmousedown = function(event){
+            if (state == 1){
+                if(isPointInRect(Hero_list[selfId])){
+                    socket.emit('selectPlayer', selfId);
+                    state = 2;
+                }
+            }
+
+            else if (state == 2){
+                if(possibleMoves != null){
+                    for(var i in possibleMoves){
+                        if(isPointInRect({x: possibleMoves[i][0], y: possibleMoves[i][1], width: 50, height: 50})){
+                            socket.emit('moveTo', possibleMoves[i], selfId);
+                            state = 1;
+                            possibleMoves = [];
+                            break;
+                        }
+                    }
+                }   
+            }
+        }
     </script>
 </body>
 </html>
+
+client click on their hero, and the sever shows all possible move, then client can click again to move hero.
