@@ -24,7 +24,7 @@
         var selfId = null;
         var mouse = [0, 0];
         var state = 1;
-        var gameMap;
+        // var gameMap;
 
         //Player Data
         var possibleMoves = [];
@@ -63,40 +63,27 @@
         socket.on('init', function(data, id){
             if(selfId == null){
                 selfId = id;
-                console.log("ID received");
-                console.log(selfId);
             }
             Hero_list = data;
-            //To remove
-            console.log("Info Received");
-            console.log(Hero_list);
             draw();
         });
 
-        socket.on('mapInit', function(map){
-            gameMap = map;
-        })
+        // socket.on('mapInit', function(map){
+        //     gameMap = map;
+        // })
         //For existing clients to add data of the newly connected client.
         socket.on('addPlayer', function(data){
             Hero_list[data.id] = data;
-            //To remove
-            console.log("new Player added");
-            console.log(Hero_list);
-
             draw();
         })
 
         //For existing clients to remove data of the disconnected client.
         socket.on('removePlayer', function(data){
             delete Hero_list[data];
-            //To remove
-            console.log("Player removed");
-            console.log(Hero_list);
-
             draw();
         })
 
-
+        //Need to improve or reconfigure this function
         socket.on('update', function(data){
             Hero_list[data.id] = data;
             draw();
@@ -105,11 +92,10 @@
 
         socket.on('showMoves', function(data){
             possibleMoves = data;
-            console.log(possibleMoves);
             draw();
         })
-        //Mouse interactions
 
+        //Mouse interactions
         document.onmousemove = function(event){
             mouse[0] = event.clientX - canvas.getBoundingClientRect().left;
             mouse[1] = event.clientY - canvas.getBoundingClientRect().top;

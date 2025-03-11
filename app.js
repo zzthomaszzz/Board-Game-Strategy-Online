@@ -15,10 +15,26 @@ serv.listen(3000, () => {
 
 class Hero{
     constructor(id){
-        this.speed = 3;
-        this.x = 5;
-        this.y = 3;
+        this.speed = 2;
+        this.x = 0;
+        this.y = 0;
         this.id = id;
+    }
+
+    getAllReachableTiles(){
+        var reachableTiles = [];
+        var y = -this.speed;
+        for(y; y <= this.speed; y++){
+            var x = Math.abs(y) - this.speed;
+            var length = Math.abs(x * 2) + 1;
+            for(var i = 1; i <= length; i ++){
+                if(map.isMovable(x + this.x , y + this.y)){
+                    reachableTiles.push([x + this.x , y + this.y]);
+                }
+                x++;
+            }
+        }
+        return reachableTiles;
     }
 }
 
@@ -27,37 +43,76 @@ SOCKET_LIST = {};
 
 // Map
 
-//May not need these variables below.
-const width = 800;
-const height = 600;
-const size = 50;
-const tileX = width / size;;
-const tileY = height / size;
+class Map {
+    constructor(){
+        //16 * 12
+        this.map = [
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+            [0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0],
+            [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+        ];
+    }
 
-//Map here.
-
-var map = [
-    [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-    [0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0],
-    [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
-];
-
-function isMovable(x, y){
-    if (map[x][y] == 0){
+    isMovable(x, y){
+        if(x >= 0 && x < 16 && y >= 0 && y < 12){
+            if (this.map[y][x] == 0){
+                return true;
+            }
+        }
         return false;
     }
-    return true;
+
+    inArray(x, y, array){
+        for (var i in array){
+            if (array[i][0] == x && array[i][1] == y){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    refineMovableTiles(array){
+        var finalMovableTiles = [];
+        for (var i in array){
+            var adj = false;
+            //check right
+            if (this.inArray(array[i][0] + 1, array[i][1], array)){
+                adj = true;
+            }
+            //check left
+            else if (this.inArray(array[i][0] - 1, array[i][1], array)){
+                adj = true;
+            }
+            //check top
+            else if (this.inArray(array[i][0], array[i][1] - 1, array)){
+                adj = true;
+            }
+            //check bottom
+            else if (this.inArray(array[i][0], array[i][1] + 1, array)){
+                adj = true;
+            }
+            else{
+                adj = false;
+            }
+            if (adj){
+                finalMovableTiles.push([array[i][0], array[i][1]])
+            }
+        }
+        return finalMovableTiles;
+
+    }
 }
 
+var map = new Map();
 
 var io=require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
@@ -66,7 +121,7 @@ io.sockets.on('connection', function(socket){
 
     //Init pack for new connection only
     socket.emit("init", Hero.list, socket.id);
-    socket.emit('mapInit', map);
+    // socket.emit('mapInit', map);
 
     //Adding new player data to other Sockets
     for (var i in SOCKET_LIST){
@@ -85,8 +140,10 @@ io.sockets.on('connection', function(socket){
     //Selecting Heroes
 
     socket.on('selectPlayer', function(data){
-        var possibleMoves = [];
         var hero = Hero.list[data];
+        var reachableTiles = hero.getAllReachableTiles();
+        var movableTiles = map.refineMovableTiles(reachableTiles);
+
 
         //this below works but need a but we dont want hero to have too much space.
         /*var y = -hero.speed;
@@ -97,17 +154,19 @@ io.sockets.on('connection', function(socket){
             }
         } */
 
-        var y = -hero.speed;
-        for(y; y <= hero.speed; y++){
-            var x = Math.abs(y) - hero.speed;
-            var length = Math.abs(x * 2) + 1;
-            for(var i = 1; i <= length; i ++){
-                possibleMoves.push([x + hero.x , y + hero.y]);
-                x++;
-            }
-        }
+        // var y = -hero.speed;
+        // for(y; y <= hero.speed; y++){
+        //     var x = Math.abs(y) - hero.speed;
+        //     var length = Math.abs(x * 2) + 1;
+        //     for(var i = 1; i <= length; i ++){
+        //         if(isMovable(x + hero.x , y + hero.y)){
+        //             possibleMoves.push([x + hero.x , y + hero.y]);
+        //         }
+        //         x++;
+        //     }
+        // }
 
-        socket.emit('showMoves', possibleMoves);
+        socket.emit('showMoves', movableTiles);
     })
 
     socket.on('moveTo', function(data, id){
