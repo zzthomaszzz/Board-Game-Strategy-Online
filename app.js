@@ -15,7 +15,7 @@ serv.listen(3000, () => {
 
 class Hero{
     constructor(id){
-        this.speed = 2;
+        this.speed = 3;
         this.x = 5;
         this.y = 3;
         this.height = 50;
@@ -62,13 +62,26 @@ io.sockets.on('connection', function(socket){
         var possibleMoves = [];
         var hero = Hero.list[data];
 
-        var y = -hero.speed;
+        //this below works but need a but we dont want hero to have too much space.
+        /*var y = -hero.speed;
         for(y; y <= hero.speed; y++){
             var x = -hero.speed;
             for(x; x <= hero.speed; x++){
                 possibleMoves.push([x + hero.x , y + hero.y]);
             }
+        } */
+
+        var y = -hero.speed;
+        for(y; y <= hero.speed; y++){
+            var x = Math.abs(y) - hero.speed;
+            var length = Math.abs(x * 2) + 1;
+            for(var i = 1; i <= length; i ++){
+                possibleMoves.push([x + hero.x , y + hero.y]);
+                x++;
+            }
+            
         }
+
         socket.emit('showMoves', possibleMoves);
     })
 
@@ -79,5 +92,4 @@ io.sockets.on('connection', function(socket){
             SOCKET_LIST[i].emit('update', Hero.list[id]);
         }
     })
-
 });
