@@ -18,8 +18,6 @@ class Hero{
         this.speed = 3;
         this.x = 5;
         this.y = 3;
-        this.height = 50;
-        this.width = 50;
         this.id = id;
     }
 }
@@ -27,16 +25,48 @@ class Hero{
 Hero.list = {};
 SOCKET_LIST = {};
 
+// Map
+
+//May not need these variables below.
+const width = 800;
+const height = 600;
+const size = 50;
+const tileX = width / size;;
+const tileY = height / size;
+
+//Map here.
+
+var map = [
+    [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+    [0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0],
+    [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+];
+
+function isMovable(x, y){
+    if (map[x][y] == 0){
+        return false;
+    }
+    return true;
+}
+
+
 var io=require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
     socket.id=Math.random();
     Hero.list[socket.id] = new Hero(socket.id);
-    //To remove
-    console.log("New connection added");
-    console.log(Hero.list);
 
     //Init pack for new connection only
     socket.emit("init", Hero.list, socket.id);
+    socket.emit('mapInit', map);
 
     //Adding new player data to other Sockets
     for (var i in SOCKET_LIST){
@@ -46,10 +76,6 @@ io.sockets.on('connection', function(socket){
 
     socket.on('disconnect', function(){
         delete Hero.list[socket.id];
-        //To remove
-        console.log("Deleted id " + socket.id);
-        console.log(Hero.list);
-
         delete SOCKET_LIST[socket.id];
         for ( var i in SOCKET_LIST){
             SOCKET_LIST[i].emit('removePlayer', socket.id);
@@ -79,7 +105,6 @@ io.sockets.on('connection', function(socket){
                 possibleMoves.push([x + hero.x , y + hero.y]);
                 x++;
             }
-            
         }
 
         socket.emit('showMoves', possibleMoves);

@@ -6,6 +6,7 @@
     <title>Document</title>
 </head>
 <body>
+    // DO NOT CHANGE THE RESOLUTION OF THE CANVAS, IT WILL BREAK THE CODE.
     <div>
         <canvas id="game" width="800" height="600" style="border:1px solid #000000;">
 
@@ -17,34 +18,39 @@
         const socket = io();
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
+        const size = 50;
 
         //Client Side
         var selfId = null;
         var mouse = [0, 0];
         var state = 1;
+        var gameMap;
 
         //Player Data
         var possibleMoves = [];
 
+        function drawRect(x, y){
+            ctx.fillRect(x * size, y * size, size, size);
+        }
+
         function draw(){
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if(state == 2){
+                ctx.fillStyle = "blue";
                 for(var i in possibleMoves){
-                    ctx.fillStyle = "blue";
-                    ctx.fillRect(possibleMoves[i][0] * 50, possibleMoves[i][1] * 50, 50, 50);
+                    drawRect(possibleMoves[i][0], possibleMoves[i][1]);
                 }
             }
-            for(var key in Hero_list){
-                var data = Hero_list[key];
-                ctx.fillStyle = 'red';
-                ctx.fillRect(data.x * data.width, data.y * data.height, data.width, data.height);
+            ctx.fillStyle = 'red';
+            for(var i in Hero_list){
+                drawRect(Hero_list[i].x, Hero_list[i].y);
             }
         }
 
         // To check for mouse click on a large data set (i.e all the available squares that the player can move to)
         // This function only check for a single rect, you would need to do a for loop to check for all the rects.
         function isPointInRect(data){
-            if(mouse[0] > (data.x * 50) && mouse[0] < (data.x * 50)+ data.width && mouse[1] > (data.y * 50) && mouse[1] < (data.y * 50) + data.height){
+            if(mouse[0] > (data.x * size) && mouse[0] < (data.x * size)+ size && mouse[1] > (data.y * size) && mouse[1] < (data.y * size) + size){
                 return true;
             }
             return false;
@@ -67,6 +73,9 @@
             draw();
         });
 
+        socket.on('mapInit', function(map){
+            gameMap = map;
+        })
         //For existing clients to add data of the newly connected client.
         socket.on('addPlayer', function(data){
             Hero_list[data.id] = data;
@@ -115,9 +124,8 @@
             }
 
             else if (state == 2){
-                if(possibleMoves != null){
                     for(var i in possibleMoves){
-                        if(isPointInRect({x: possibleMoves[i][0], y: possibleMoves[i][1], width: 50, height: 50})){
+                        if(isPointInRect({x: possibleMoves[i][0], y: possibleMoves[i][1]})){
                             socket.emit('moveTo', possibleMoves[i], selfId);
                             state = 1;
                             possibleMoves = [];
@@ -125,7 +133,6 @@
                         }
                     }
                 }   
-            }
         }
     </script>
 </body>
